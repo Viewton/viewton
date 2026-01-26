@@ -1,0 +1,4 @@
+dependencies {
+    api project(':viewton-core')
+    implementation 'org.jooq:jooq:3.18.7'
+}

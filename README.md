@@ -100,7 +100,7 @@ build the query components in a programmatic way.
 
 ## How to use it in an application?
 
-Add the source code or dependency to your project 
+Add the source code or dependency to your project
 and annotate the root application class or an appropriate configuration class with `@EnableViewton`.
 
 Example:
@@ -114,4 +114,3 @@ public class SomeConfiguration {
     ...
 }
 ```
-
