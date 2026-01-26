@@ -1,5 +1,5 @@
 plugins {
-    id 'java-library' apply false
+    id 'java-library'
 }
 
 allprojects {
