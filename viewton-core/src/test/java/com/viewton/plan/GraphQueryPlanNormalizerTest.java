@@ -76,8 +76,7 @@ class GraphQueryPlanNormalizerTest {
     private static final class TestSchema implements Schema {
         @Override
         public Table table(String name) {
-            return "payments".equals(name) ? () -> {
-            } : null;
+            return "payments".equals(name) ? new Table() {} : null;
         }
     }
 
