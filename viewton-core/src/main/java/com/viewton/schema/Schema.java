@@ -5,4 +5,5 @@ package com.viewton.schema;
  * Implementations are provided by the user or adapter modules.
  */
 public interface Schema {
+    Table table(String name);
 }
