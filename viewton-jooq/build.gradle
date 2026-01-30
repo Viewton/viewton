@@ -1,4 +1,14 @@
 dependencies {
     api project(':viewton-core')
     implementation 'org.jooq:jooq:3.18.7'
+    implementation 'org.springframework.boot:spring-boot-autoconfigure:3.2.5'
+    compileOnly 'org.springframework.boot:spring-boot-configuration-processor:3.2.5'
+    testImplementation 'org.springframework.boot:spring-boot-starter-jooq:3.2.5'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test:3.2.5'
+    testImplementation 'com.h2database:h2:2.2.224'
+    testImplementation 'org.flywaydb:flyway-core:10.15.0'
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
