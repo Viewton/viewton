@@ -11,14 +11,14 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.jooq.JooqAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 
 /**
  * Auto-configuration for Viewton's jOOQ integration.
  */
-@AutoConfiguration
-@ConditionalOnClass(DSLContext.class)
-@ConditionalOnBean(DSLContext.class)
+@AutoConfiguration(after = JooqAutoConfiguration.class)
+@ConditionalOnClass({ DSLContext.class, JooqQueryExecutor.class })
 public class ViewtonJooqAutoConfiguration {
 
     @Bean

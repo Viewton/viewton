@@ -39,7 +39,7 @@ public final class JooqQueryExecutor {
 
     public QueryResult execute(QueryPlan plan) {
         Objects.requireNonNull(plan, "plan");
-        Table<?> table = resolveTable(plan.getEntity().getName());
+        Table<?> table = resolveTable(plan.getEntity().name());
 
         List<SelectFieldOrAsterisk> selectFields = buildSelectFields(plan, table);
         SelectConditionStep<Record> select = (plan.getFlags().isDistinct()

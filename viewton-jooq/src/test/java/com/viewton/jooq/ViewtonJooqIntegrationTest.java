@@ -1,6 +1,7 @@
 package com.viewton.jooq;
 
 import com.viewton.api.input.RestQueryInput;
+import com.viewton.jooq.config.ViewtonJooqAutoConfiguration;
 import com.viewton.jooq.schema.JooqSchema;
 import com.viewton.jooq.util.ViewtonRepository;
 import org.jooq.DSLContext;
@@ -11,6 +12,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.TestPropertySource;
 
@@ -42,12 +44,12 @@ class ViewtonJooqIntegrationTest {
     @Test
     void listReturnsFilteredResults() {
         Map<String, String> params = new HashMap<>();
-        params.put("attributes", "id,amount,status,created_at");
-        params.put("sorting", "-amount");
+        params.put("attributes", "ID,AMOUNT,STATUS,CREATED_AT");
+        params.put("sorting", "-AMOUNT");
         params.put("pageSize", "2");
         params.put("page", "1");
-        params.put("status", "PAID");
-        params.put("amount", ">=100");
+        params.put("STATUS", "PAID");
+        params.put("AMOUNT", ">=100");
 
         List<PaymentDto> result = viewtonRepository.list(new RestQueryInput(params), PaymentDto.class);
 
