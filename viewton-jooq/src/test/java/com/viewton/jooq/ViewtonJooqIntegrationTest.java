@@ -22,7 +22,10 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(classes = ViewtonJooqIntegrationTest.TestApplication.class)
+@SpringBootTest(classes = {
+        ViewtonJooqIntegrationTest.TestApplication.class,
+        ViewtonJooqIntegrationTest.TestSchemaConfiguration.class
+})
 @TestPropertySource(properties = {
         "spring.datasource.url=jdbc:h2:mem:viewton;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
         "spring.datasource.driverClassName=org.h2.Driver",
