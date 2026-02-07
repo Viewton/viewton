@@ -1,0 +1,7 @@
+dependencies {
+    api project(':viewton-core')
+    implementation project(':viewton-jooq')
+    implementation 'org.springframework.boot:spring-boot-autoconfigure:3.2.5'
+    implementation 'org.springframework.boot:spring-boot-starter-web:3.2.5'
+    compileOnly 'org.springframework.boot:spring-boot-configuration-processor:3.2.5'
+}
