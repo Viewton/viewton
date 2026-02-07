@@ -1,0 +1,8 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/viewton
+    username: viewton
+    password: viewton
+    driver-class-name: org.postgresql.Driver
+  jooq:
+    sql-dialect: POSTGRES
