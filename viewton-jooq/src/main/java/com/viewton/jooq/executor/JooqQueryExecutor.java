@@ -14,8 +14,9 @@ import org.jooq.Record;
 import org.jooq.Result;
 import org.jooq.SelectConditionStep;
 import org.jooq.SelectFieldOrAsterisk;
-import org.jooq.SelectLimitStep;
 import org.jooq.SelectSeekStepN;
+import org.jooq.Select;
+import org.jooq.SelectLimitStep;
 import org.jooq.Table;
 import org.jooq.impl.DSL;
 
@@ -47,7 +48,7 @@ public final class JooqQueryExecutor {
                 .where(buildCondition(plan, table));
 
         SelectLimitStep<Record> sorted = applySorting(select, plan, table);
-        SelectLimitStep<Record> limited = applyPagination(sorted, plan);
+        Select<Record> limited = applyPagination(sorted, plan);
 
         Result<Record> result = limited.fetch();
         List<JooqRow> rows = result.stream().map(JooqRow::new).toList();
@@ -95,14 +96,14 @@ public final class JooqQueryExecutor {
         List<QueryValue> values = criterion.getValues();
         boolean ignoreCase = criterion.isIgnoreCase();
         return switch (criterion.getOperator()) {
-            case EQ -> compare(field, values.get(0), ignoreCase, Comparison.EQ);
-            case NEQ -> compare(field, values.get(0), ignoreCase, Comparison.NEQ);
+            case EQ -> compareEq(field, values.get(0), ignoreCase);
+            case NEQ -> compareNeq(field, values.get(0), ignoreCase);
             case GT -> field.gt(values.get(0).getValue());
             case GTE -> field.ge(values.get(0).getValue());
             case LT -> field.lt(values.get(0).getValue());
             case LTE -> field.le(values.get(0).getValue());
             case BETWEEN -> between(field, values, ignoreCase);
-            case LIKE -> compare(field, values.get(0), ignoreCase, Comparison.LIKE);
+            case LIKE -> compareLike(field, values.get(0), ignoreCase);
         };
     }
 
@@ -119,13 +120,31 @@ public final class JooqQueryExecutor {
         return field.between(start, end);
     }
 
-    private Condition compare(Field<Object> field, QueryValue value, boolean ignoreCase, Comparison comparison) {
+    private Condition compareEq(Field<Object> field, QueryValue value, boolean ignoreCase) {
         if (ignoreCase) {
             Field<String> lowered = lower(field);
             String loweredValue = stringValue(value.getValue()).toLowerCase(Locale.ROOT);
-            return comparison.apply(lowered, loweredValue);
+            return lowered.eq(loweredValue);
         }
-        return comparison.apply(field, value.getValue());
+        return field.eq(value.getValue());
+    }
+
+    private Condition compareNeq(Field<Object> field, QueryValue value, boolean ignoreCase) {
+        if (ignoreCase) {
+            Field<String> lowered = lower(field);
+            String loweredValue = stringValue(value.getValue()).toLowerCase(Locale.ROOT);
+            return lowered.ne(loweredValue);
+        }
+        return field.ne(value.getValue());
+    }
+
+    private Condition compareLike(Field<Object> field, QueryValue value, boolean ignoreCase) {
+        if (ignoreCase) {
+            Field<String> lowered = lower(field);
+            String loweredValue = stringValue(value.getValue()).toLowerCase(Locale.ROOT);
+            return lowered.like(loweredValue);
+        }
+        return field.like(stringValue(value.getValue()));
     }
 
     private Field<String> lower(Field<Object> field) {
@@ -154,7 +173,7 @@ public final class JooqQueryExecutor {
         return ordered;
     }
 
-    private SelectLimitStep<Record> applyPagination(SelectLimitStep<Record> select, QueryPlan plan) {
+    private Select<Record> applyPagination(SelectLimitStep<Record> select, QueryPlan plan) {
         Integer pageSize = plan.getPagination().getPageSize();
         Integer page = plan.getPagination().getPage();
         if (pageSize == null) {
@@ -176,26 +195,4 @@ public final class JooqQueryExecutor {
         return field;
     }
 
-    private enum Comparison {
-        EQ {
-            @Override
-            Condition apply(Field<?> field, Object value) {
-                return field.eq(value);
-            }
-        },
-        NEQ {
-            @Override
-            Condition apply(Field<?> field, Object value) {
-                return field.ne(value);
-            }
-        },
-        LIKE {
-            @Override
-            Condition apply(Field<?> field, Object value) {
-                return field.like(value.toString());
-            }
-        };
-
-        abstract Condition apply(Field<?> field, Object value);
-    }
 }
