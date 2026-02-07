@@ -4,8 +4,10 @@ import com.viewton.api.parser.RestQueryInputParser;
 import com.viewton.jooq.executor.JooqQueryExecutor;
 import com.viewton.materialized.api.MaterializedOpenApiController;
 import com.viewton.materialized.api.MaterializedViewtonController;
+import com.viewton.materialized.openapi.MaterializedOpenApiBuilder;
 import com.viewton.materialized.service.MaterializedViewtonService;
 import com.viewton.plan.RestQueryPlanNormalizer;
+import io.swagger.v3.oas.models.OpenAPI;
 import org.jooq.DSLContext;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -53,6 +55,18 @@ public class ViewtonMaterializedAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public MaterializedOpenApiController materializedOpenApiController(DSLContext dslContext) {
-        return new MaterializedOpenApiController(dslContext);
+        return new MaterializedOpenApiController(materializedOpenApiBuilder(dslContext));
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public MaterializedOpenApiBuilder materializedOpenApiBuilder(DSLContext dslContext) {
+        return new MaterializedOpenApiBuilder(dslContext);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(OpenAPI.class)
+    public OpenAPI materializedOpenApi(MaterializedOpenApiBuilder builder) {
+        return builder.buildAllTables();
     }
 }
