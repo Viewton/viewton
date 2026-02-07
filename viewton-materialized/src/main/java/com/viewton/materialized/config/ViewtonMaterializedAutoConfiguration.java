@@ -2,6 +2,7 @@ package com.viewton.materialized.config;
 
 import com.viewton.api.parser.RestQueryInputParser;
 import com.viewton.jooq.executor.JooqQueryExecutor;
+import com.viewton.materialized.api.MaterializedOpenApiController;
 import com.viewton.materialized.api.MaterializedViewtonController;
 import com.viewton.materialized.service.MaterializedViewtonService;
 import com.viewton.plan.RestQueryPlanNormalizer;
@@ -47,5 +48,11 @@ public class ViewtonMaterializedAutoConfiguration {
             MaterializedViewtonService materializedViewtonService
     ) {
         return new MaterializedViewtonController(materializedViewtonService);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public MaterializedOpenApiController materializedOpenApiController(DSLContext dslContext) {
+        return new MaterializedOpenApiController(dslContext);
     }
 }
