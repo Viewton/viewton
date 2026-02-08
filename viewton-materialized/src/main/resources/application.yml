@@ -6,6 +6,9 @@ spring:
     driver-class-name: org.postgresql.Driver
   jooq:
     sql-dialect: POSTGRES
+viewton:
+  allowed-schemas:
+    - public
 springdoc:
   swagger-ui:
     path: /swagger-ui

@@ -6,6 +6,7 @@ import com.viewton.jooq.executor.JooqQueryExecutor;
 import com.viewton.jooq.mapping.JooqRow;
 import com.viewton.jooq.mapping.QueryResult;
 import com.viewton.jooq.schema.JooqSchema;
+import com.viewton.materialized.config.ViewtonMaterializedProperties;
 import com.viewton.model.QueryModel;
 import com.viewton.model.RestQueryModel;
 import com.viewton.plan.QueryPlan;
@@ -24,20 +25,24 @@ public final class MaterializedViewtonService {
     private final DSLContext dslContext;
     private final RestQueryInputParser restQueryInputParser;
     private final RestQueryPlanNormalizer restQueryPlanNormalizer;
+    private final ViewtonMaterializedProperties properties;
 
     public MaterializedViewtonService(
             DSLContext dslContext,
             RestQueryInputParser restQueryInputParser,
-            RestQueryPlanNormalizer restQueryPlanNormalizer
+            RestQueryPlanNormalizer restQueryPlanNormalizer,
+            ViewtonMaterializedProperties properties
     ) {
         this.dslContext = Objects.requireNonNull(dslContext, "dslContext");
         this.restQueryInputParser = Objects.requireNonNull(restQueryInputParser, "restQueryInputParser");
         this.restQueryPlanNormalizer = Objects.requireNonNull(restQueryPlanNormalizer, "restQueryPlanNormalizer");
+        this.properties = Objects.requireNonNull(properties, "properties");
     }
 
     public List<Map<String, Object>> list(String schemaName, String tableName, Map<String, String> parameters) {
         Objects.requireNonNull(schemaName, "schemaName");
         Objects.requireNonNull(tableName, "tableName");
+        ensureSchemaAllowed(schemaName);
         Table<?> table = resolveTable(schemaName, tableName);
         JooqSchema schema = JooqSchema.builder()
                 .registerTable(tableName, table)
@@ -68,6 +73,18 @@ public final class MaterializedViewtonService {
             return false;
         }
         return table.getSchema().getName().equalsIgnoreCase(schemaName);
+    }
+
+    private void ensureSchemaAllowed(String schemaName) {
+        List<String> allowedSchemas = properties.getAllowedSchemas();
+        if (allowedSchemas.isEmpty()) {
+            return;
+        }
+        boolean allowed = allowedSchemas.stream()
+                .anyMatch(schema -> schema.equalsIgnoreCase(schemaName));
+        if (!allowed) {
+            throw new IllegalArgumentException("Schema not allowed: " + schemaName);
+        }
     }
 
     private RestQueryModel asRestModel(QueryModel model) {

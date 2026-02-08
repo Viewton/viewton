@@ -13,6 +13,7 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
 /**
@@ -20,6 +21,7 @@ import org.springframework.context.annotation.Bean;
  */
 @AutoConfiguration
 @ConditionalOnClass({ DSLContext.class, JooqQueryExecutor.class })
+@EnableConfigurationProperties(ViewtonMaterializedProperties.class)
 public class ViewtonMaterializedAutoConfiguration {
 
     @Bean
@@ -39,9 +41,10 @@ public class ViewtonMaterializedAutoConfiguration {
     public MaterializedViewtonService materializedViewtonService(
             DSLContext dslContext,
             RestQueryInputParser restQueryInputParser,
-            RestQueryPlanNormalizer restQueryPlanNormalizer
+            RestQueryPlanNormalizer restQueryPlanNormalizer,
+            ViewtonMaterializedProperties properties
     ) {
-        return new MaterializedViewtonService(dslContext, restQueryInputParser, restQueryPlanNormalizer);
+        return new MaterializedViewtonService(dslContext, restQueryInputParser, restQueryPlanNormalizer, properties);
     }
 
     @Bean
@@ -54,14 +57,17 @@ public class ViewtonMaterializedAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public MaterializedOpenApiController materializedOpenApiController(DSLContext dslContext) {
-        return new MaterializedOpenApiController(materializedOpenApiBuilder(dslContext));
+    public MaterializedOpenApiController materializedOpenApiController(MaterializedOpenApiBuilder builder) {
+        return new MaterializedOpenApiController(builder);
     }
 
     @Bean
     @ConditionalOnMissingBean
-    public MaterializedOpenApiBuilder materializedOpenApiBuilder(DSLContext dslContext) {
-        return new MaterializedOpenApiBuilder(dslContext);
+    public MaterializedOpenApiBuilder materializedOpenApiBuilder(
+            DSLContext dslContext,
+            ViewtonMaterializedProperties properties
+    ) {
+        return new MaterializedOpenApiBuilder(dslContext, properties);
     }
 
     @Bean

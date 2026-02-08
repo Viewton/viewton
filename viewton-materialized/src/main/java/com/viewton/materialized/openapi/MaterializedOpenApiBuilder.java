@@ -11,6 +11,7 @@ import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
+import com.viewton.materialized.config.ViewtonMaterializedProperties;
 import io.swagger.v3.oas.models.Components;
 import org.jooq.DataType;
 import org.jooq.DSLContext;
@@ -34,9 +35,11 @@ import java.util.Objects;
  */
 public final class MaterializedOpenApiBuilder {
     private final DSLContext dslContext;
+    private final ViewtonMaterializedProperties properties;
 
-    public MaterializedOpenApiBuilder(DSLContext dslContext) {
+    public MaterializedOpenApiBuilder(DSLContext dslContext, ViewtonMaterializedProperties properties) {
         this.dslContext = Objects.requireNonNull(dslContext, "dslContext");
+        this.properties = Objects.requireNonNull(properties, "properties");
     }
 
     public OpenAPI buildAllTables() {
@@ -46,6 +49,9 @@ public final class MaterializedOpenApiBuilder {
 
         for (Table<?> table : dslContext.meta().getTables()) {
             String schemaName = table.getSchema() != null ? table.getSchema().getName() : "public";
+            if (!isSchemaAllowed(schemaName)) {
+                continue;
+            }
             String tableName = table.getName();
             String schemaKey = schemaKey(schemaName, tableName);
             components.addSchemas(schemaKey, buildTableSchema(table));
@@ -60,6 +66,7 @@ public final class MaterializedOpenApiBuilder {
     }
 
     public OpenAPI buildForTable(String schemaName, String tableName) {
+        ensureSchemaAllowed(schemaName);
         Table<?> table = resolveTable(schemaName, tableName);
         OpenAPI openAPI = baseOpenApi();
         Components components = new Components();
@@ -245,6 +252,7 @@ public final class MaterializedOpenApiBuilder {
     }
 
     private Table<?> resolveTable(String schemaName, String tableName) {
+        ensureSchemaAllowed(schemaName);
         return dslContext.meta()
                 .getTables()
                 .stream()
@@ -265,5 +273,19 @@ public final class MaterializedOpenApiBuilder {
 
     private String schemaKey(String schemaName, String tableName) {
         return schemaName + "_" + tableName;
+    }
+
+    private boolean isSchemaAllowed(String schemaName) {
+        List<String> allowedSchemas = properties.getAllowedSchemas();
+        if (allowedSchemas.isEmpty()) {
+            return true;
+        }
+        return allowedSchemas.stream().anyMatch(schema -> schema.equalsIgnoreCase(schemaName));
+    }
+
+    private void ensureSchemaAllowed(String schemaName) {
+        if (!isSchemaAllowed(schemaName)) {
+            throw new IllegalArgumentException("Schema not allowed: " + schemaName);
+        }
     }
 }
