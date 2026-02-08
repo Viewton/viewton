@@ -16,6 +16,9 @@ public final class RestQueryModel implements QueryModel {
     private final boolean entities;
     private final List<String> attributes;
     private final List<String> sum;
+    private final List<String> avg;
+    private final List<String> min;
+    private final List<String> max;
     private final List<String> sorting;
     private final List<FilterCriterion> filters;
 
@@ -27,6 +30,9 @@ public final class RestQueryModel implements QueryModel {
             boolean entities,
             List<String> attributes,
             List<String> sum,
+            List<String> avg,
+            List<String> min,
+            List<String> max,
             List<String> sorting,
             List<FilterCriterion> filters
     ) {
@@ -37,6 +43,9 @@ public final class RestQueryModel implements QueryModel {
         this.entities = entities;
         this.attributes = List.copyOf(Objects.requireNonNull(attributes, "attributes"));
         this.sum = List.copyOf(Objects.requireNonNull(sum, "sum"));
+        this.avg = List.copyOf(Objects.requireNonNull(avg, "avg"));
+        this.min = List.copyOf(Objects.requireNonNull(min, "min"));
+        this.max = List.copyOf(Objects.requireNonNull(max, "max"));
         this.sorting = List.copyOf(Objects.requireNonNull(sorting, "sorting"));
         this.filters = List.copyOf(Objects.requireNonNull(filters, "filters"));
     }
@@ -67,6 +76,18 @@ public final class RestQueryModel implements QueryModel {
 
     public List<String> getSum() {
         return sum;
+    }
+
+    public List<String> getAvg() {
+        return avg;
+    }
+
+    public List<String> getMin() {
+        return min;
+    }
+
+    public List<String> getMax() {
+        return max;
     }
 
     public List<String> getSorting() {

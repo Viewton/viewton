@@ -119,7 +119,7 @@ public final class MaterializedOpenApiBuilder {
                 "Query parameters follow Viewton REST syntax.",
                 "Filters can use operators: =, !=, >, >=, <, <=, between (..), like (%/_),",
                 "and case-insensitive prefix (^).",
-                "Aggregations use sum=<field1,field2> and return <field>_sum fields in aggregations.",
+                "Aggregations use sum/avg/min/max parameters and return <field>_<op> fields in aggregations.",
                 "Use entities=false to skip returning entity rows."
         );
     }
@@ -134,6 +134,9 @@ public final class MaterializedOpenApiBuilder {
         parameters.add(queryParameter("entities", "Return entity rows (default true)."));
         parameters.add(queryParameter("attributes", "Comma-separated list of fields to select."));
         parameters.add(queryParameter("sum", "Comma-separated list of numeric fields to sum."));
+        parameters.add(queryParameter("avg", "Comma-separated list of numeric fields to average."));
+        parameters.add(queryParameter("min", "Comma-separated list of numeric fields for minimum."));
+        parameters.add(queryParameter("max", "Comma-separated list of numeric fields for maximum."));
         parameters.add(queryParameter("sorting", "Comma-separated list of fields to sort, prefix with '-' for DESC."));
 
         for (Field<?> field : table.fields()) {
@@ -183,6 +186,12 @@ public final class MaterializedOpenApiBuilder {
         Map<String, Schema> aggregationProperties = new LinkedHashMap<>();
         aggregationProperties.put("count", new Schema<>().type("integer").format("int64"));
         aggregationProperties.put("sum", new ObjectSchema()
+                .additionalProperties(new Schema<>().type("number")));
+        aggregationProperties.put("avg", new ObjectSchema()
+                .additionalProperties(new Schema<>().type("number")));
+        aggregationProperties.put("min", new ObjectSchema()
+                .additionalProperties(new Schema<>().type("number")));
+        aggregationProperties.put("max", new ObjectSchema()
                 .additionalProperties(new Schema<>().type("number")));
         aggregationsSchema.setProperties(aggregationProperties);
         properties.put("aggregations", aggregationsSchema);

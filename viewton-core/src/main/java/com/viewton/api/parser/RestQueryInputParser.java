@@ -25,6 +25,9 @@ public final class RestQueryInputParser implements QueryInputParser<RestQueryInp
             "entities",
             "attributes",
             "sum",
+            "avg",
+            "min",
+            "max",
             "sorting"
     );
 
@@ -40,10 +43,26 @@ public final class RestQueryInputParser implements QueryInputParser<RestQueryInp
         boolean entities = parseBoolean(params.get("entities"), true);
         List<String> attributes = parseList(params.get("attributes"));
         List<String> sum = parseList(params.get("sum"));
+        List<String> avg = parseList(params.get("avg"));
+        List<String> min = parseList(params.get("min"));
+        List<String> max = parseList(params.get("max"));
         List<String> sorting = parseList(params.get("sorting"));
         List<FilterCriterion> filters = parseFilters(params);
 
-        return new RestQueryModel(page, pageSize, count, distinct, entities, attributes, sum, sorting, filters);
+        return new RestQueryModel(
+                page,
+                pageSize,
+                count,
+                distinct,
+                entities,
+                attributes,
+                sum,
+                avg,
+                min,
+                max,
+                sorting,
+                filters
+        );
     }
 
     private static List<FilterCriterion> parseFilters(Map<String, String> params) {

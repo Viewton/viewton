@@ -94,11 +94,27 @@ public final class JooqQueryExecutor {
             Field<Double> field = resolveField(table, fieldName, Double.class);
             fields.add(DSL.sum(field).as(fieldName + "_sum"));
         }
+        for (String fieldName : plan.getAggregations().getAvgFields()) {
+            Field<Double> field = resolveField(table, fieldName, Double.class);
+            fields.add(DSL.avg(field).as(fieldName + "_avg"));
+        }
+        for (String fieldName : plan.getAggregations().getMinFields()) {
+            Field<Double> field = resolveField(table, fieldName, Double.class);
+            fields.add(DSL.min(field).as(fieldName + "_min"));
+        }
+        for (String fieldName : plan.getAggregations().getMaxFields()) {
+            Field<Double> field = resolveField(table, fieldName, Double.class);
+            fields.add(DSL.max(field).as(fieldName + "_max"));
+        }
         return fields;
     }
 
     private boolean requiresAggregations(QueryPlan plan) {
-        return plan.getFlags().isCount() || !plan.getAggregations().getSumFields().isEmpty();
+        return plan.getFlags().isCount()
+                || !plan.getAggregations().getSumFields().isEmpty()
+                || !plan.getAggregations().getAvgFields().isEmpty()
+                || !plan.getAggregations().getMinFields().isEmpty()
+                || !plan.getAggregations().getMaxFields().isEmpty();
     }
 
     private Map<String, Object> runAggregations(QueryPlan plan, Table<?> table) {

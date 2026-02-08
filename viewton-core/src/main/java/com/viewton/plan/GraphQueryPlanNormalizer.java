@@ -30,7 +30,7 @@ public final class GraphQueryPlanNormalizer {
         validateEntity(schema, entityName);
 
         Projection projection = new Projection(model.getSelections());
-        Aggregations aggregations = new Aggregations(model.getSumFields());
+        Aggregations aggregations = new Aggregations(model.getSumFields(), List.of(), List.of(), List.of());
         Sorting sorting = new Sorting(toSortFields(model.getOrderBy()));
         Pagination pagination = toPagination(model.getPagination());
         Filters filters = new Filters(toFilterCriteria(model.getFilters()));
