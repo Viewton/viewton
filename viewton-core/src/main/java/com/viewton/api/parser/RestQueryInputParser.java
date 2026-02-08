@@ -22,6 +22,7 @@ public final class RestQueryInputParser implements QueryInputParser<RestQueryInp
             "page_size",
             "count",
             "distinct",
+            "entities",
             "attributes",
             "sum",
             "sorting"
@@ -36,12 +37,13 @@ public final class RestQueryInputParser implements QueryInputParser<RestQueryInp
         Integer pageSize = parseInteger(firstNonNull(params.get("pageSize"), params.get("page_size")));
         boolean count = parseBoolean(params.get("count"));
         boolean distinct = parseBoolean(params.get("distinct"));
+        boolean entities = parseBoolean(params.get("entities"), true);
         List<String> attributes = parseList(params.get("attributes"));
         List<String> sum = parseList(params.get("sum"));
         List<String> sorting = parseList(params.get("sorting"));
         List<FilterCriterion> filters = parseFilters(params);
 
-        return new RestQueryModel(page, pageSize, count, distinct, attributes, sum, sorting, filters);
+        return new RestQueryModel(page, pageSize, count, distinct, entities, attributes, sum, sorting, filters);
     }
 
     private static List<FilterCriterion> parseFilters(Map<String, String> params) {
@@ -114,6 +116,13 @@ public final class RestQueryInputParser implements QueryInputParser<RestQueryInp
             return false;
         }
         return "true".equalsIgnoreCase(value) || "1".equals(value) || "yes".equalsIgnoreCase(value);
+    }
+
+    private static boolean parseBoolean(String value, boolean defaultValue) {
+        if (value == null) {
+            return defaultValue;
+        }
+        return parseBoolean(value);
     }
 
     private static Integer parseInteger(String value) {

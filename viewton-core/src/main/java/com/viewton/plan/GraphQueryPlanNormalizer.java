@@ -34,7 +34,7 @@ public final class GraphQueryPlanNormalizer {
         Sorting sorting = new Sorting(toSortFields(model.getOrderBy()));
         Pagination pagination = toPagination(model.getPagination());
         Filters filters = new Filters(toFilterCriteria(model.getFilters()));
-        QueryFlags flags = new QueryFlags(model.isCount(), model.isDistinct());
+        QueryFlags flags = new QueryFlags(model.isCount(), model.isDistinct(), true);
 
         return new QueryPlan(new EntityRef(entityName), projection, filters, sorting, pagination, aggregations, flags);
     }

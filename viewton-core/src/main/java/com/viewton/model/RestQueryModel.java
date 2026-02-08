@@ -13,6 +13,7 @@ public final class RestQueryModel implements QueryModel {
     private final Integer pageSize;
     private final boolean count;
     private final boolean distinct;
+    private final boolean entities;
     private final List<String> attributes;
     private final List<String> sum;
     private final List<String> sorting;
@@ -23,6 +24,7 @@ public final class RestQueryModel implements QueryModel {
             Integer pageSize,
             boolean count,
             boolean distinct,
+            boolean entities,
             List<String> attributes,
             List<String> sum,
             List<String> sorting,
@@ -32,6 +34,7 @@ public final class RestQueryModel implements QueryModel {
         this.pageSize = pageSize;
         this.count = count;
         this.distinct = distinct;
+        this.entities = entities;
         this.attributes = List.copyOf(Objects.requireNonNull(attributes, "attributes"));
         this.sum = List.copyOf(Objects.requireNonNull(sum, "sum"));
         this.sorting = List.copyOf(Objects.requireNonNull(sorting, "sorting"));
@@ -52,6 +55,10 @@ public final class RestQueryModel implements QueryModel {
 
     public boolean isDistinct() {
         return distinct;
+    }
+
+    public boolean isEntities() {
+        return entities;
     }
 
     public List<String> getAttributes() {

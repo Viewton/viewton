@@ -3,8 +3,8 @@ package com.viewton.materialized.service;
 import com.viewton.api.input.RestQueryInput;
 import com.viewton.api.parser.RestQueryInputParser;
 import com.viewton.jooq.executor.JooqQueryExecutor;
-import com.viewton.jooq.mapping.JooqRow;
 import com.viewton.jooq.mapping.QueryResult;
+import com.viewton.materialized.api.MaterializedQueryResponse;
 import com.viewton.jooq.schema.JooqSchema;
 import com.viewton.model.QueryModel;
 import com.viewton.model.RestQueryModel;
@@ -13,7 +13,6 @@ import com.viewton.plan.RestQueryPlanNormalizer;
 import org.jooq.DSLContext;
 import org.jooq.Table;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -35,7 +34,7 @@ public final class MaterializedViewtonService {
         this.restQueryPlanNormalizer = Objects.requireNonNull(restQueryPlanNormalizer, "restQueryPlanNormalizer");
     }
 
-    public List<Map<String, Object>> list(String schemaName, String tableName, Map<String, String> parameters) {
+    public MaterializedQueryResponse list(String schemaName, String tableName, Map<String, String> parameters) {
         Objects.requireNonNull(schemaName, "schemaName");
         Objects.requireNonNull(tableName, "tableName");
         Table<?> table = resolveTable(schemaName, tableName);
@@ -48,7 +47,10 @@ public final class MaterializedViewtonService {
 
         JooqQueryExecutor executor = new JooqQueryExecutor(dslContext, schema);
         QueryResult result = executor.execute(plan);
-        return result.getRows().stream().map(JooqRow::asMap).toList();
+        return new MaterializedQueryResponse(
+                result.getRows().stream().map(row -> row.asMap()).toList(),
+                result.getAggregations()
+        );
     }
 
     private Table<?> resolveTable(String schemaName, String tableName) {

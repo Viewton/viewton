@@ -26,7 +26,7 @@ public final class RestQueryPlanNormalizer {
         Sorting sorting = new Sorting(toSortFields(model.getSorting()));
         Pagination pagination = new Pagination(model.getPage().orElse(null), model.getPageSize().orElse(null));
         Filters filters = new Filters(toFilterCriteria(model.getFilters()));
-        QueryFlags flags = new QueryFlags(model.isCount(), model.isDistinct());
+        QueryFlags flags = new QueryFlags(model.isCount(), model.isDistinct(), model.isEntities());
 
         return new QueryPlan(new EntityRef(entityName), projection, filters, sorting, pagination, aggregations, flags);
     }
