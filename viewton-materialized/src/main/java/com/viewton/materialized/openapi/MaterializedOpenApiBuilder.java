@@ -63,7 +63,6 @@ public final class MaterializedOpenApiBuilder {
             String tableName = table.getName();
             String schemaKey = schemaKey(schemaName, tableName);
             components.addSchemas(schemaKey, buildTableSchema(table));
-            components.addSchemas(schemaKey + "Response", buildResponseSchema(table, schemaKey));
             String path = "/materialized-viewton/" + schemaName + "/" + tableName;
             paths.addPathItem(path, buildPathItem(schemaName, tableName, schemaKey, table));
         }
@@ -79,7 +78,6 @@ public final class MaterializedOpenApiBuilder {
         Components components = new Components();
         String schemaKey = schemaKey(schemaName, tableName);
         components.addSchemas(schemaKey, buildTableSchema(table));
-        components.addSchemas(schemaKey + "Response", buildResponseSchema(table, schemaKey));
         openAPI.setComponents(components);
         Paths paths = new Paths();
         String path = "/materialized-viewton/" + schemaName + "/" + tableName;
@@ -106,12 +104,13 @@ public final class MaterializedOpenApiBuilder {
     }
 
     private ApiResponses buildResponses(String schemaKey) {
+        ObjectSchema responseSchema = buildResponseSchema(schemaKey);
         ApiResponse response = new ApiResponse()
                 .description("Query results")
                 .content(new io.swagger.v3.oas.models.media.Content()
                         .addMediaType("application/json",
                                 new io.swagger.v3.oas.models.media.MediaType()
-                                        .schema(new Schema<>().$ref("#/components/schemas/" + schemaKey + "Response"))));
+                                        .schema(responseSchema)));
         return new ApiResponses().addApiResponse("200", response);
     }
 
@@ -173,7 +172,7 @@ public final class MaterializedOpenApiBuilder {
         return schema;
     }
 
-    private Schema<?> buildResponseSchema(Table<?> table, String schemaKey) {
+    private ObjectSchema buildResponseSchema(String schemaKey) {
         ObjectSchema schema = new ObjectSchema();
         Map<String, Schema> properties = new LinkedHashMap<>();
         ArraySchema entitiesSchema = new ArraySchema()
@@ -183,11 +182,8 @@ public final class MaterializedOpenApiBuilder {
         ObjectSchema aggregationsSchema = new ObjectSchema();
         Map<String, Schema> aggregationProperties = new LinkedHashMap<>();
         aggregationProperties.put("count", new Schema<>().type("integer").format("int64"));
-        for (Field<?> field : table.fields()) {
-            if (field.getDataType().isNumeric()) {
-                aggregationProperties.put(field.getName() + "_sum", buildSchema(field.getDataType()));
-            }
-        }
+        aggregationProperties.put("sum", new ObjectSchema()
+                .additionalProperties(new Schema<>().type("number")));
         aggregationsSchema.setProperties(aggregationProperties);
         properties.put("aggregations", aggregationsSchema);
         schema.setProperties(properties);
