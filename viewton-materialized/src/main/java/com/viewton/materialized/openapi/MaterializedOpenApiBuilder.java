@@ -63,7 +63,7 @@ public final class MaterializedOpenApiBuilder {
             String tableName = table.getName();
             String schemaKey = schemaKey(schemaName, tableName);
             components.addSchemas(schemaKey, buildTableSchema(table));
-            String path = "/materialized-viewton/" + schemaName + "/" + tableName;
+            String path = "/api/" + schemaName + "/" + tableName;
             paths.addPathItem(path, buildPathItem(schemaName, tableName, schemaKey, table));
         }
 
@@ -80,7 +80,7 @@ public final class MaterializedOpenApiBuilder {
         components.addSchemas(schemaKey, buildTableSchema(table));
         openAPI.setComponents(components);
         Paths paths = new Paths();
-        String path = "/materialized-viewton/" + schemaName + "/" + tableName;
+        String path = "/api/" + schemaName + "/" + tableName;
         paths.addPathItem(path, buildPathItem(schemaName, tableName, schemaKey, table));
         openAPI.setPaths(paths);
         return openAPI;

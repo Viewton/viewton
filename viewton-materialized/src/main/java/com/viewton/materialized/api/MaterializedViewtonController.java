@@ -13,7 +13,7 @@ import java.util.Map;
  * REST endpoint for dynamic Viewton reads from Postgres via jOOQ.
  */
 @RestController
-@RequestMapping("/materialized-viewton")
+@RequestMapping("/api")
 public class MaterializedViewtonController {
     private final MaterializedViewtonService service;
 

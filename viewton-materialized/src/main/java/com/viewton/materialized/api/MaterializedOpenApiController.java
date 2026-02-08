@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
  * REST endpoint that returns an OpenAPI specification for a specific table.
  */
 @RestController
-@RequestMapping("/materialized-viewton/openapi")
+@RequestMapping("/openapi")
 public class MaterializedOpenApiController {
     private final MaterializedOpenApiBuilder openApiBuilder;
 
