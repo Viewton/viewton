@@ -1,0 +1,14 @@
+viewton:
+  allowed-schemas:
+    - public
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/viewton
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  jooq:
+    sql-dialect: POSTGRES
+springdoc:
+  swagger-ui:
+    path: /swagger-ui

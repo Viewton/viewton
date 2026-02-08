@@ -2,3 +2,4 @@ rootProject.name = 'viewton'
 
 include 'viewton-core'
 include 'viewton-jooq'
+include 'viewton-materialized'
