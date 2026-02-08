@@ -1,5 +1,6 @@
 package com.viewton.materialized.openapi;
 
+import com.viewton.materialized.config.properties.ViewtonProperties;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
@@ -16,6 +17,8 @@ import org.jooq.DataType;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Table;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -28,6 +31,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Builds an OpenAPI specification from database metadata.
@@ -35,7 +39,12 @@ import java.util.Objects;
 public final class MaterializedOpenApiBuilder {
     private final DSLContext dslContext;
 
-    public MaterializedOpenApiBuilder(DSLContext dslContext) {
+    @Autowired
+    private ViewtonProperties properties;
+
+    public MaterializedOpenApiBuilder(
+        DSLContext dslContext
+    ) {
         this.dslContext = Objects.requireNonNull(dslContext, "dslContext");
     }
 
@@ -46,6 +55,11 @@ public final class MaterializedOpenApiBuilder {
 
         for (Table<?> table : dslContext.meta().getTables()) {
             String schemaName = table.getSchema() != null ? table.getSchema().getName() : "public";
+
+            if (!properties.getAllowedSchemas().contains(schemaName)) {
+                continue;
+            }
+
             String tableName = table.getName();
             String schemaKey = schemaKey(schemaName, tableName);
             components.addSchemas(schemaKey, buildTableSchema(table));
@@ -143,7 +157,7 @@ public final class MaterializedOpenApiBuilder {
 
     private Schema<?> buildTableSchema(Table<?> table) {
         ObjectSchema schema = new ObjectSchema();
-        Map<String, Schema<?>> properties = new LinkedHashMap<>();
+        Map<String, Schema> properties = new LinkedHashMap<>();
         List<String> required = new ArrayList<>();
         for (Field<?> field : table.fields()) {
             properties.put(field.getName(), buildSchema(field.getDataType()));
@@ -160,7 +174,7 @@ public final class MaterializedOpenApiBuilder {
 
     private Schema<?> buildResponseSchema(Table<?> table) {
         ObjectSchema schema = new ObjectSchema();
-        Map<String, Schema<?>> properties = new LinkedHashMap<>();
+        Map<String, Schema> properties = new LinkedHashMap<>();
         for (Field<?> field : table.fields()) {
             Schema<?> base = buildSchema(field.getDataType());
             properties.put(field.getName(), base);
@@ -204,14 +218,14 @@ public final class MaterializedOpenApiBuilder {
             schema.setType("string");
         }
 
-        if (dataType.length() != null && dataType.length() > 0) {
+        if (dataType.length() > 0) {
             schema.setMaxLength(dataType.length());
         }
         Map<String, Object> extensions = new LinkedHashMap<>();
-        if (dataType.precision() != null && dataType.precision() > 0) {
+        if (dataType.precision() > 0) {
             extensions.put("x-precision", dataType.precision());
         }
-        if (dataType.scale() != null && dataType.scale() > 0) {
+        if (dataType.scale() > 0) {
             extensions.put("x-scale", dataType.scale());
         }
         if (!extensions.isEmpty()) {
@@ -229,13 +243,13 @@ public final class MaterializedOpenApiBuilder {
         DataType<?> dataType = field.getDataType();
         builder.append("Type: ").append(dataType.getTypeName().toLowerCase(Locale.ROOT)).append(".");
         builder.append(" Nullable: ").append(dataType.nullable()).append(".");
-        if (dataType.length() != null && dataType.length() > 0) {
+        if (dataType.length() > 0) {
             builder.append(" Max length: ").append(dataType.length()).append(".");
         }
-        if (dataType.precision() != null && dataType.precision() > 0) {
+        if (dataType.precision() > 0) {
             builder.append(" Precision: ").append(dataType.precision()).append(".");
         }
-        if (dataType.scale() != null && dataType.scale() > 0) {
+        if (dataType.scale() > 0) {
             builder.append(" Scale: ").append(dataType.scale()).append(".");
         }
         if (dataType.defaultValue() != null) {

@@ -4,6 +4,7 @@ import com.viewton.api.parser.RestQueryInputParser;
 import com.viewton.jooq.executor.JooqQueryExecutor;
 import com.viewton.materialized.api.MaterializedOpenApiController;
 import com.viewton.materialized.api.MaterializedViewtonController;
+import com.viewton.materialized.config.properties.ViewtonProperties;
 import com.viewton.materialized.openapi.MaterializedOpenApiBuilder;
 import com.viewton.materialized.service.MaterializedViewtonService;
 import com.viewton.plan.RestQueryPlanNormalizer;
@@ -13,6 +14,7 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
 /**
@@ -20,6 +22,7 @@ import org.springframework.context.annotation.Bean;
  */
 @AutoConfiguration
 @ConditionalOnClass({ DSLContext.class, JooqQueryExecutor.class })
+@EnableConfigurationProperties(ViewtonProperties.class)
 public class ViewtonMaterializedAutoConfiguration {
 
     @Bean

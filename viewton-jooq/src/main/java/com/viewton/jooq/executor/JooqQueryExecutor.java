@@ -69,7 +69,7 @@ public final class JooqQueryExecutor {
             fields.add(DSL.count().as("count"));
         }
         for (String fieldName : plan.getAggregations().getSumFields()) {
-            Field<Number> field = resolveField(table, fieldName, Number.class);
+            Field<Double> field = resolveField(table, fieldName, Double.class);
             fields.add(DSL.sum(field).as(fieldName + "_sum"));
         }
         if (!plan.getProjection().getFields().isEmpty()) {
