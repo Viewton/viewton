@@ -63,8 +63,7 @@ public final class MaterializedOpenApiBuilder {
             String tableName = table.getName();
             String schemaKey = schemaKey(schemaName, tableName);
             components.addSchemas(schemaKey, buildTableSchema(table));
-            components.addSchemas(schemaKey + "Response", buildResponseSchema(table));
-            String path = "/materialized-viewton/" + schemaName + "/" + tableName;
+            String path = "/api/" + schemaName + "/" + tableName;
             paths.addPathItem(path, buildPathItem(schemaName, tableName, schemaKey, table));
         }
 
@@ -79,10 +78,9 @@ public final class MaterializedOpenApiBuilder {
         Components components = new Components();
         String schemaKey = schemaKey(schemaName, tableName);
         components.addSchemas(schemaKey, buildTableSchema(table));
-        components.addSchemas(schemaKey + "Response", buildResponseSchema(table));
         openAPI.setComponents(components);
         Paths paths = new Paths();
-        String path = "/materialized-viewton/" + schemaName + "/" + tableName;
+        String path = "/api/" + schemaName + "/" + tableName;
         paths.addPathItem(path, buildPathItem(schemaName, tableName, schemaKey, table));
         openAPI.setPaths(paths);
         return openAPI;
@@ -106,13 +104,13 @@ public final class MaterializedOpenApiBuilder {
     }
 
     private ApiResponses buildResponses(String schemaKey) {
-        Schema<?> arraySchema = new ArraySchema()
-                .items(new Schema<>().$ref("#/components/schemas/" + schemaKey + "Response"));
+        ObjectSchema responseSchema = buildResponseSchema(schemaKey);
         ApiResponse response = new ApiResponse()
                 .description("Query results")
                 .content(new io.swagger.v3.oas.models.media.Content()
                         .addMediaType("application/json",
-                                new io.swagger.v3.oas.models.media.MediaType().schema(arraySchema)));
+                                new io.swagger.v3.oas.models.media.MediaType()
+                                        .schema(responseSchema)));
         return new ApiResponses().addApiResponse("200", response);
     }
 
@@ -121,7 +119,8 @@ public final class MaterializedOpenApiBuilder {
                 "Query parameters follow Viewton REST syntax.",
                 "Filters can use operators: =, !=, >, >=, <, <=, between (..), like (%/_),",
                 "and case-insensitive prefix (^).",
-                "Aggregations use sum=<field1,field2> and return <field>_sum fields."
+                "Aggregations use sum/avg/min/max parameters and return <field>_<op> fields in aggregations.",
+                "Use entities=false to skip returning entity rows."
         );
     }
 
@@ -132,8 +131,12 @@ public final class MaterializedOpenApiBuilder {
         parameters.add(queryParameter("page_size", "Page size (alias: pageSize)."));
         parameters.add(queryParameter("count", "Return count only."));
         parameters.add(queryParameter("distinct", "Return distinct rows."));
+        parameters.add(queryParameter("entities", "Return entity rows (default true)."));
         parameters.add(queryParameter("attributes", "Comma-separated list of fields to select."));
         parameters.add(queryParameter("sum", "Comma-separated list of numeric fields to sum."));
+        parameters.add(queryParameter("avg", "Comma-separated list of numeric fields to average."));
+        parameters.add(queryParameter("min", "Comma-separated list of numeric fields for minimum."));
+        parameters.add(queryParameter("max", "Comma-separated list of numeric fields for maximum."));
         parameters.add(queryParameter("sorting", "Comma-separated list of fields to sort, prefix with '-' for DESC."));
 
         for (Field<?> field : table.fields()) {
@@ -172,17 +175,26 @@ public final class MaterializedOpenApiBuilder {
         return schema;
     }
 
-    private Schema<?> buildResponseSchema(Table<?> table) {
+    private ObjectSchema buildResponseSchema(String schemaKey) {
         ObjectSchema schema = new ObjectSchema();
         Map<String, Schema> properties = new LinkedHashMap<>();
-        for (Field<?> field : table.fields()) {
-            Schema<?> base = buildSchema(field.getDataType());
-            properties.put(field.getName(), base);
-            if (field.getDataType().isNumeric()) {
-                properties.put(field.getName() + "_sum", buildSchema(field.getDataType()));
-            }
-        }
-        properties.put("count", new Schema<>().type("integer").format("int64"));
+        ArraySchema entitiesSchema = new ArraySchema()
+                .items(new Schema<>().$ref("#/components/schemas/" + schemaKey));
+        properties.put("entities", entitiesSchema);
+
+        ObjectSchema aggregationsSchema = new ObjectSchema();
+        Map<String, Schema> aggregationProperties = new LinkedHashMap<>();
+        aggregationProperties.put("count", new Schema<>().type("integer").format("int64"));
+        aggregationProperties.put("sum", new ObjectSchema()
+                .additionalProperties(new Schema<>().type("number")));
+        aggregationProperties.put("avg", new ObjectSchema()
+                .additionalProperties(new Schema<>().type("number")));
+        aggregationProperties.put("min", new ObjectSchema()
+                .additionalProperties(new Schema<>().type("number")));
+        aggregationProperties.put("max", new ObjectSchema()
+                .additionalProperties(new Schema<>().type("number")));
+        aggregationsSchema.setProperties(aggregationProperties);
+        properties.put("aggregations", aggregationsSchema);
         schema.setProperties(properties);
         return schema;
     }

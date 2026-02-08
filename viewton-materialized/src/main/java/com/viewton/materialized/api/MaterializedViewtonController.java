@@ -7,14 +7,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.util.Map;
 
 /**
  * REST endpoint for dynamic Viewton reads from Postgres via jOOQ.
  */
 @RestController
-@RequestMapping("/materialized-viewton")
+@RequestMapping("/api")
 public class MaterializedViewtonController {
     private final MaterializedViewtonService service;
 
@@ -23,7 +22,7 @@ public class MaterializedViewtonController {
     }
 
     @GetMapping("/{schema}/{table}")
-    public List<Map<String, Object>> list(
+    public MaterializedQueryResponse list(
             @PathVariable("schema") String schema,
             @PathVariable("table") String table,
             @RequestParam Map<String, String> parameters

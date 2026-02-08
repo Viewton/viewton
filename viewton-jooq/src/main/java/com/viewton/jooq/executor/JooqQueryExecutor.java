@@ -23,6 +23,7 @@ import org.jooq.impl.DSL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -41,18 +42,26 @@ public final class JooqQueryExecutor {
         Objects.requireNonNull(plan, "plan");
         Table<?> table = resolveTable(plan.getEntity().name());
 
-        List<SelectFieldOrAsterisk> selectFields = buildSelectFields(plan, table);
-        SelectConditionStep<Record> select = (plan.getFlags().isDistinct()
-                ? dslContext.selectDistinct(selectFields).from(table)
-                : dslContext.select(selectFields).from(table))
-                .where(buildCondition(plan, table));
+        List<JooqRow> rows = List.of();
+        if (plan.getFlags().isEntities()) {
+            List<SelectFieldOrAsterisk> selectFields = buildEntitySelectFields(plan, table);
+            SelectConditionStep<Record> select = (plan.getFlags().isDistinct()
+                    ? dslContext.selectDistinct(selectFields).from(table)
+                    : dslContext.select(selectFields).from(table))
+                    .where(buildCondition(plan, table));
 
-        SelectLimitStep<Record> sorted = applySorting(select, plan, table);
-        Select<Record> limited = applyPagination(sorted, plan);
+            SelectLimitStep<Record> sorted = applySorting(select, plan, table);
+            Select<Record> limited = applyPagination(sorted, plan);
 
-        Result<Record> result = limited.fetch();
-        List<JooqRow> rows = result.stream().map(JooqRow::new).toList();
-        return new QueryResult(rows);
+            Result<Record> result = limited.fetch();
+            rows = result.stream().map(JooqRow::new).toList();
+        }
+
+        Map<String, Object> aggregations = Map.of();
+        if (requiresAggregations(plan)) {
+            aggregations = runAggregations(plan, table);
+        }
+        return new QueryResult(rows, aggregations);
     }
 
     private Table<?> resolveTable(String entityName) {
@@ -63,15 +72,8 @@ public final class JooqQueryExecutor {
         return table;
     }
 
-    private List<SelectFieldOrAsterisk> buildSelectFields(QueryPlan plan, Table<?> table) {
+    private List<SelectFieldOrAsterisk> buildEntitySelectFields(QueryPlan plan, Table<?> table) {
         List<SelectFieldOrAsterisk> fields = new ArrayList<>();
-        if (plan.getFlags().isCount()) {
-            fields.add(DSL.count().as("count"));
-        }
-        for (String fieldName : plan.getAggregations().getSumFields()) {
-            Field<Double> field = resolveField(table, fieldName, Double.class);
-            fields.add(DSL.sum(field).as(fieldName + "_sum"));
-        }
         if (!plan.getProjection().getFields().isEmpty()) {
             for (String fieldName : plan.getProjection().getFields()) {
                 fields.add(resolveField(table, fieldName, Object.class));
@@ -81,6 +83,54 @@ public final class JooqQueryExecutor {
             fields.add(DSL.asterisk());
         }
         return fields;
+    }
+
+    private List<SelectFieldOrAsterisk> buildAggregationFields(QueryPlan plan, Table<?> table) {
+        List<SelectFieldOrAsterisk> fields = new ArrayList<>();
+        if (plan.getFlags().isCount()) {
+            fields.add(DSL.count().as("count"));
+        }
+        for (String fieldName : plan.getAggregations().getSumFields()) {
+            Field<Double> field = resolveField(table, fieldName, Double.class);
+            fields.add(DSL.sum(field).as(fieldName + "_sum"));
+        }
+        for (String fieldName : plan.getAggregations().getAvgFields()) {
+            Field<Double> field = resolveField(table, fieldName, Double.class);
+            fields.add(DSL.avg(field).as(fieldName + "_avg"));
+        }
+        for (String fieldName : plan.getAggregations().getMinFields()) {
+            Field<Double> field = resolveField(table, fieldName, Double.class);
+            fields.add(DSL.min(field).as(fieldName + "_min"));
+        }
+        for (String fieldName : plan.getAggregations().getMaxFields()) {
+            Field<Double> field = resolveField(table, fieldName, Double.class);
+            fields.add(DSL.max(field).as(fieldName + "_max"));
+        }
+        return fields;
+    }
+
+    private boolean requiresAggregations(QueryPlan plan) {
+        return plan.getFlags().isCount()
+                || !plan.getAggregations().getSumFields().isEmpty()
+                || !plan.getAggregations().getAvgFields().isEmpty()
+                || !plan.getAggregations().getMinFields().isEmpty()
+                || !plan.getAggregations().getMaxFields().isEmpty();
+    }
+
+    private Map<String, Object> runAggregations(QueryPlan plan, Table<?> table) {
+        List<SelectFieldOrAsterisk> aggregationFields = buildAggregationFields(plan, table);
+        if (aggregationFields.isEmpty()) {
+            return Map.of();
+        }
+        SelectConditionStep<Record> select = (plan.getFlags().isDistinct()
+                ? dslContext.selectDistinct(aggregationFields).from(table)
+                : dslContext.select(aggregationFields).from(table))
+                .where(buildCondition(plan, table));
+        Result<Record> result = select.fetch();
+        if (result.isEmpty()) {
+            return Map.of();
+        }
+        return new JooqRow(result.get(0)).asMap();
     }
 
     private Condition buildCondition(QueryPlan plan, Table<?> table) {
