@@ -6,19 +6,15 @@ import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.Paths;
 import io.swagger.v3.oas.models.info.Info;
-import io.swagger.v3.oas.models.media.ArraySchema;
-import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
-import io.swagger.v3.oas.models.Components;
 import org.jooq.DataType;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Table;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -31,7 +27,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * Builds an OpenAPI specification from database metadata.
@@ -50,7 +45,6 @@ public final class MaterializedOpenApiBuilder {
 
     public OpenAPI buildAllTables() {
         OpenAPI openAPI = baseOpenApi();
-        Components components = new Components();
         Paths paths = new Paths();
 
         for (Table<?> table : dslContext.meta().getTables()) {
@@ -61,13 +55,10 @@ public final class MaterializedOpenApiBuilder {
             }
 
             String tableName = table.getName();
-            String schemaKey = schemaKey(schemaName, tableName);
-            components.addSchemas(schemaKey, buildTableSchema(table));
             String path = "/api/" + schemaName + "/" + tableName;
-            paths.addPathItem(path, buildPathItem(schemaName, tableName, schemaKey, table));
+            paths.addPathItem(path, buildPathItem(schemaName, tableName, table));
         }
 
-        openAPI.setComponents(components);
         openAPI.setPaths(paths);
         return openAPI;
     }
@@ -75,13 +66,9 @@ public final class MaterializedOpenApiBuilder {
     public OpenAPI buildForTable(String schemaName, String tableName) {
         Table<?> table = resolveTable(schemaName, tableName);
         OpenAPI openAPI = baseOpenApi();
-        Components components = new Components();
-        String schemaKey = schemaKey(schemaName, tableName);
-        components.addSchemas(schemaKey, buildTableSchema(table));
-        openAPI.setComponents(components);
         Paths paths = new Paths();
         String path = "/api/" + schemaName + "/" + tableName;
-        paths.addPathItem(path, buildPathItem(schemaName, tableName, schemaKey, table));
+        paths.addPathItem(path, buildPathItem(schemaName, tableName, table));
         openAPI.setPaths(paths);
         return openAPI;
     }
@@ -94,23 +81,17 @@ public final class MaterializedOpenApiBuilder {
                         .description("Dynamic query endpoint for Viewton materialized views"));
     }
 
-    private PathItem buildPathItem(String schemaName, String tableName, String schemaKey, Table<?> table) {
+    private PathItem buildPathItem(String schemaName, String tableName, Table<?> table) {
         Operation operation = new Operation()
                 .summary("Query " + schemaName + "." + tableName)
                 .description(buildQueryDescription())
                 .parameters(buildParameters(table))
-                .responses(buildResponses(schemaKey));
+                .responses(buildResponses());
         return new PathItem().get(operation);
     }
 
-    private ApiResponses buildResponses(String schemaKey) {
-        ObjectSchema responseSchema = buildResponseSchema(schemaKey);
-        ApiResponse response = new ApiResponse()
-                .description("Query results")
-                .content(new io.swagger.v3.oas.models.media.Content()
-                        .addMediaType("application/json",
-                                new io.swagger.v3.oas.models.media.MediaType()
-                                        .schema(responseSchema)));
+    private ApiResponses buildResponses() {
+        ApiResponse response = new ApiResponse().description("Query results");
         return new ApiResponses().addApiResponse("200", response);
     }
 
@@ -158,46 +139,6 @@ public final class MaterializedOpenApiBuilder {
                 .schema(new Schema<>().type("string"));
     }
 
-    private Schema<?> buildTableSchema(Table<?> table) {
-        ObjectSchema schema = new ObjectSchema();
-        Map<String, Schema> properties = new LinkedHashMap<>();
-        List<String> required = new ArrayList<>();
-        for (Field<?> field : table.fields()) {
-            properties.put(field.getName(), buildSchema(field.getDataType()));
-            if (!field.getDataType().nullable()) {
-                required.add(field.getName());
-            }
-        }
-        schema.setProperties(properties);
-        if (!required.isEmpty()) {
-            schema.setRequired(required);
-        }
-        return schema;
-    }
-
-    private ObjectSchema buildResponseSchema(String schemaKey) {
-        ObjectSchema schema = new ObjectSchema();
-        Map<String, Schema> properties = new LinkedHashMap<>();
-        ArraySchema entitiesSchema = new ArraySchema()
-                .items(new Schema<>().$ref("#/components/schemas/" + schemaKey));
-        properties.put("entities", entitiesSchema);
-
-        ObjectSchema aggregationsSchema = new ObjectSchema();
-        Map<String, Schema> aggregationProperties = new LinkedHashMap<>();
-        aggregationProperties.put("count", new Schema<>().type("integer").format("int64"));
-        aggregationProperties.put("sum", new ObjectSchema()
-                .additionalProperties(new Schema<>().type("number")));
-        aggregationProperties.put("avg", new ObjectSchema()
-                .additionalProperties(new Schema<>().type("number")));
-        aggregationProperties.put("min", new ObjectSchema()
-                .additionalProperties(new Schema<>().type("number")));
-        aggregationProperties.put("max", new ObjectSchema()
-                .additionalProperties(new Schema<>().type("number")));
-        aggregationsSchema.setProperties(aggregationProperties);
-        properties.put("aggregations", aggregationsSchema);
-        schema.setProperties(properties);
-        return schema;
-    }
 
     private Schema<?> buildSchema(DataType<?> dataType) {
         Schema<?> schema = new Schema<>();
@@ -289,7 +230,4 @@ public final class MaterializedOpenApiBuilder {
         return table.getSchema().getName().equalsIgnoreCase(schemaName);
     }
 
-    private String schemaKey(String schemaName, String tableName) {
-        return schemaName + "_" + tableName;
-    }
 }
